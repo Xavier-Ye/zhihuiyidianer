@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f1e8">
+    <meta name="description" content="小一，一个谦逊、耐心，陪你每天学会一点儿的 AI 学伴。">
+    <title>只会一点儿 · 小一 AI 学伴</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/xiaoyi.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="#" aria-label="只会一点儿首页">
+                <span class="brand-mark">一</span>
+                <span><strong>只会一点儿</strong><small>陪你每天，学会一点</small></span>
+            </a>
+            <nav class="view-tabs" role="tablist" aria-label="学习页面">
+                <button class="view-tab active" type="button" data-view="learn" role="tab" aria-selected="true">一起学习</button>
+                <button class="view-tab" type="button" data-view="review" role="tab" aria-selected="false">今日回顾</button>
+            </nav>
+            <div class="top-actions">
+                <span class="today-pill" id="todayLabel">今天 · 一起学会一点</span>
+                <button class="profile-button" id="profileBtn" type="button">学习画像</button>
+                <button class="icon-button" id="clearBtn" type="button" title="清空本次对话" aria-label="清空本次对话">↻</button>
+            </div>
+        </header>
+
+        <main class="learning-layout" id="learningView">
+            <aside class="left-panel">
+                <section class="companion-card">
+                    <span class="sun-dot"></span>
+                    <img src="{{ url_for('static', filename='images/xiaoyi.png') }}" alt="小一的卡通形象">
+                    <p class="eyebrow">你的 AI 学伴</p>
+                    <h1>你好，我是小一</h1>
+                    <p>我懂得不算多，但很愿意陪你一起想。</p>
+                    <div class="online"><i></i> 正在陪伴你</div>
+                </section>
+
+                <section class="stats-card">
+                    <div class="section-heading">
+                        <div><span class="eyebrow">今日足迹</span><h2>一点，也值得记录</h2></div>
+                        <span class="tiny-spark">✦</span>
+                    </div>
+                    <div class="stats-grid">
+                        <div><strong id="questionCount">0</strong><span>次提问</span></div>
+                        <div><strong id="learnedCount">0</strong><span>会了一点</span></div>
+                        <div><strong id="focusMinutes">0</strong><span>分钟陪伴</span></div>
+                    </div>
+                    <div class="progress-row"><span>今日小目标</span><b id="goalText">0 / 3</b></div>
+                    <div class="progress-track"><i id="goalProgress"></i></div>
+                </section>
+            </aside>
+
+            <section class="chat-card" aria-label="和小一对话">
+                <div class="chat-head">
+                    <div>
+                        <p class="eyebrow">一起想想</p>
+                        <h2>今天想弄懂什么？</h2>
+                    </div>
+                    <div class="chat-head-controls">
+                        <div class="mode-tabs" role="tablist" aria-label="回答模式">
+                            <button class="mode-tab active" type="button" data-mode="guide" role="tab" aria-selected="true"><span>⌁</span> 引导</button>
+                            <button class="mode-tab" type="button" data-mode="direct" role="tab" aria-selected="false"><span>→</span> 直接</button>
+                            <button class="mode-tab diagnose" type="button" data-mode="diagnose" role="tab" aria-selected="false"><span>⌕</span> 溯源</button>
+                        </div>
+                        <button class="auto-speak-button" id="autoSpeakBtn" type="button" aria-pressed="false" title="AI 回复后自动朗读，默认关闭">朗读：关</button>
+                    </div>
+                    <input type="checkbox" id="modeToggle" checked hidden>
+                </div>
+
+                <div class="mode-note" id="modeNote">
+                    <span class="note-icon">⌁</span>
+                    <div><strong>引导模式</strong><p>我会用问题和小提示，陪你自己走到答案。</p></div>
+                </div>
+
+                <div class="messages" id="messages" aria-live="polite">
+                    <div class="message bot welcome-message">
+                        <div class="avatar"><img src="{{ url_for('static', filename='images/xiaoyi.png') }}" alt="小一"></div>
+                        <div>
+                            <span class="speaker">小一</span>
+                            <div class="bubble">
+                                <p>嗨，今天也来学会一点儿吧。</p>
+                                <p>不着急，你可以从一个没想明白的小问题开始。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-questions" id="quickQuestions">
+                    <button type="button" data-question="帮我理解一个新概念">理解一个概念</button>
+                    <button type="button" data-question="这道题我卡住了，陪我找找卡点">拆解一道难题</button>
+                    <button type="button" data-question="帮我复习今天学过的内容">复习今天所学</button>
+                </div>
+
+                <p class="speech-status" id="speechStatus" role="status" aria-live="polite" hidden></p>
+
+                <div class="composer">
+                    <textarea id="userInput" rows="1" maxlength="1000" placeholder="把你的疑问放在这里……" aria-label="输入你的问题"></textarea>
+                    <button class="mic-button" id="micBtn" type="button" aria-label="开始语音输入" aria-pressed="false" title="语音可能由浏览器服务处理">●</button>
+                    <button id="sendBtn" type="button" aria-label="发送消息"><span>发送</span> ↑</button>
+                    <div class="input-hint"><span id="inputHint">引导模式 · 按 Enter 发送，Shift + Enter 换行</span><b id="charCount">0 / 1000</b></div>
+                </div>
+            </section>
+
+            <aside class="right-panel">
+                <section class="learned-card">
+                    <div class="section-heading">
+                        <div><span class="eyebrow">今天学会了一点</span><h2>把小进步收进口袋</h2></div>
+                        <span class="tiny-spark">✦</span>
+                    </div>
+                    <div class="learned-list" id="learnedList">
+                        <div class="empty-learned">
+                            <span>☁</span>
+                            <p>完成一次对话后，<br>小一会替你记下收获。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="quote-card">
+                    <span>“</span>
+                    <p>学会一点儿，<br>就是在向前走。</p>
+                    <small>—— 小一</small>
+                </section>
+            </aside>
+        </main>
+
+        <main class="review-page" id="reviewView" hidden>
+            <header class="review-hero">
+                <div>
+                    <p class="eyebrow">今日知识点回顾</p>
+                    <h1>把聊过的，变成真正会的</h1>
+                    <p>先看今天留下的知识点，再挑一个薄弱处练一遍。连续答对两次，就算真正掌握。</p>
+                </div>
+                <button class="back-to-learn" type="button" data-view="learn">继续学习 →</button>
+            </header>
+
+            <section class="review-overview" aria-label="今日掌握概况">
+                <article><span>今天接触</span><strong id="reviewTotal">0</strong><small>个知识点</small></article>
+                <article><span>正在巩固</span><strong id="reviewPracticing">0</strong><small>优先再练一次</small></article>
+                <article><span>已经掌握</span><strong id="reviewMastered">0</strong><small>连续答对两次</small></article>
+                <article class="weak-overview"><span>发现薄弱点</span><strong id="reviewWeak">0</strong><small>有证据才会记录</small></article>
+            </section>
+
+            <section class="review-content">
+                <div class="review-heading">
+                    <div><p class="eyebrow">今天的收获</p><h2>从最需要巩固的开始</h2></div>
+                    <p>掌握状态来自练习表现，不由一句“我懂了”决定。</p>
+                </div>
+                <div class="review-list" id="reviewList"></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog class="practice-dialog" id="practiceDialog" aria-labelledby="practiceTitle">
+        <form method="dialog" class="practice-shell">
+            <button class="dialog-close" value="cancel" aria-label="关闭练习">×</button>
+            <p class="eyebrow">巩固一下</p>
+            <h2 id="practiceTitle">再来一题</h2>
+            <p class="practice-concept" id="practiceConcept"></p>
+            <div class="practice-question" id="practiceQuestion" aria-live="polite">正在准备题目……</div>
+            <label for="practiceAnswer">你的回答</label>
+            <textarea id="practiceAnswer" rows="4" maxlength="1000" placeholder="写下你的思路，不必只写最终答案"></textarea>
+            <div class="practice-feedback" id="practiceFeedback" hidden></div>
+            <div class="practice-actions">
+                <button class="practice-again" id="practiceAgain" type="button" hidden>再练一次</button>
+                <button class="practice-submit" id="practiceSubmit" type="button">提交作答</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="profile-dialog" id="profileDialog" aria-labelledby="profileTitle">
+        <form class="profile-shell" id="profileForm">
+            <button class="dialog-close" id="profileClose" type="button" aria-label="关闭学习画像">×</button>
+            <p class="eyebrow">小一对你的了解</p>
+            <h2 id="profileTitle">学习画像</h2>
+            <p class="profile-intro">这些信息会和学习证据一起帮助小一调整讲解。你可以随时修改或删除。</p>
+
+            <div class="profile-fields">
+                <label>
+                    <span>学习阶段</span>
+                    <select id="profileGrade">
+                        <option value="">暂不设置</option>
+                        <option value="小学低段">小学低段</option>
+                        <option value="小学高段">小学高段</option>
+                        <option value="初中">初中</option>
+                        <option value="高中">高中</option>
+                        <option value="大学">大学</option>
+                        <option value="成人学习">成人学习</option>
+                    </select>
+                </label>
+                <label>
+                    <span>主要学科</span>
+                    <input id="profileSubject" maxlength="30" placeholder="如：数学、英语、编程">
+                </label>
+                <label>
+                    <span>喜欢的讲解方式</span>
+                    <select id="profileStyle">
+                        <option value="balanced">平衡讲解</option>
+                        <option value="step_by_step">分步引导</option>
+                        <option value="examples">多举例子</option>
+                        <option value="concise">简洁直接</option>
+                    </select>
+                </label>
+            </div>
+
+            <section class="memory-preview">
+                <div><span class="eyebrow">长期记忆</span><h3>最近需要留意的卡点</h3></div>
+                <div class="memory-error-list" id="memoryErrorList"></div>
+            </section>
+
+            <p class="profile-privacy">画像保存在当前学生会话中。清空浏览器数据或换设备后不会自动识别为同一学生。</p>
+            <div class="profile-actions">
+                <button class="danger-link" id="profileDelete" type="button">删除画像</button>
+                <button class="danger-link" id="memoryClear" type="button">清空学习记忆</button>
+                <button class="profile-save" type="submit">保存画像</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="memory-dialog" id="memoryDialog" aria-labelledby="memoryTitle">
+        <form class="memory-shell" id="memoryForm">
+            <button class="dialog-close" id="memoryClose" type="button" aria-label="关闭记忆管理">×</button>
+            <p class="eyebrow">由你校正</p>
+            <h2 id="memoryTitle">管理学习记忆</h2>
+            <p class="memory-intro">这里的修改会直接影响小一以后如何理解你的学习状态。</p>
+
+            <label class="memory-name-field">
+                <span>知识点名称</span>
+                <input id="memoryConcept" maxlength="32">
+            </label>
+
+            <section class="memory-weak-card" id="memoryWeakCard">
+                <div><span>当前薄弱点</span><p id="memoryWeakText"></p></div>
+                <button id="memoryClearWeak" type="button">这不是我的薄弱点</button>
+            </section>
+
+            <section class="memory-merge-card">
+                <div><span>合并重复知识点</span><p>练习和掌握证据会转移到保留的知识点，并重新计算状态。</p></div>
+                <div class="memory-merge-row">
+                    <select id="memoryMergeTarget" aria-label="选择要合并到的知识点"></select>
+                    <button id="memoryMerge" type="button">合并</button>
+                </div>
+            </section>
+
+            <section class="attempt-history">
+                <div><span class="eyebrow">练习判定</span><h3>最近的作答记录</h3></div>
+                <div class="attempt-list" id="memoryAttemptList"></div>
+            </section>
+
+            <div class="memory-actions">
+                <button class="danger-link" id="memoryDelete" type="button">删除这条记忆</button>
+                <button class="memory-save" type="submit">保存名称</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script defer src="{{ url_for('static', filename='vendor/katex/katex.min.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='vendor/katex/contrib/auto-render.min.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
